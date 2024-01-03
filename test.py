@@ -3,7 +3,7 @@ import unittest
 from Game import Game
 from Player import Player
 from Domino import Domino, OldLady
-from Train import Train
+from Train import Train, CommonTrain
 
 class TestGameClass(unittest.TestCase):
     def setUp(self):
@@ -91,7 +91,7 @@ class TestTrainClass(unittest.TestCase):
         self.t1 = Train("TestTrain1", tip=9)
         self.t1_copy = Train("TestTrain1", tip=7)
 
-        self.t2 = Train("TestTrain2", tip=6, public=True)
+        self.t2 = CommonTrain(tip=6)
 
     def tearDown(self):
         # Clean up any resources used for testing
