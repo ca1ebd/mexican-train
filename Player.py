@@ -5,10 +5,12 @@ from Enum import PlayResult
 from PlayerAction import PlayerAction
 
 class Player:
-    def __init__(self, name):
+    def __init__(self, name, is_real=True, color="blue"):
         self.name = name
         self.hand: list[Domino] = []
         self.history: list[str] = []
+        self.is_real = is_real
+        self.color = color
 
     def __repr__(self) -> str:
         return self.name

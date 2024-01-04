@@ -1,13 +1,15 @@
 import random
 
+from Visualizer import Visualizer
 from Player import Player
 from Domino import Domino, OldLady
 from Table import Table
 from Enum import PlayResult
 
 
+
 class Game():
-    def __init__(self, num_rounds: int, players: list[Player], print_log=False):
+    def __init__(self, num_rounds: int, players: list[Player], print_log=False, visual_round=False, visual_turn=False):
         self.num_rounds = num_rounds
         self.players = players
         self.players_draw_num = 10
@@ -15,6 +17,8 @@ class Game():
         self.announcer = Player("Town Crier")
         self.print_log = print_log
         self.history = []
+        self.visual_round = visual_round
+        self.visual_turn = visual_turn
 
     def start(self):
         table = Table(self._generate_dominoes(self.num_rounds), self.players, print_log=self.print_log)
@@ -88,6 +92,10 @@ class Game():
             score = player.score()
             table.player_scores[player] += score
             self.log(table, player, "ROUND SCORE", f"scored {score} this round, bringing their total to: {table.player_scores[player]}")
+
+        if self.visual_round:
+            vis = Visualizer(table)
+            vis.render()
     
     def play_domino(self, table, player, train, domino):
         player.remove_domino_from_hand(domino)
