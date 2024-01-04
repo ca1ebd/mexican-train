@@ -14,7 +14,7 @@ class Game():
         self.spinner_draw_start_player_index = 0
         self.announcer = Player("Town Crier")
         self.print_log = print_log
-        
+        self.history = []
 
     def start(self):
         table = Table(self._generate_dominoes(self.num_rounds), self.players, print_log=self.print_log)
@@ -33,9 +33,9 @@ class Game():
             self.play_game(table, round - 1)
 
     def game_over(self, table: Table):
-        table.log(self.announcer, group="FINAL", message="The game is over!")
+        self.log(table, self.announcer, group="FINAL", message="The game is over!")
         for key in table.player_scores.keys():
-            table.log(self.announcer, group="FINAL", message=f"{key}: {table.player_scores[key]}")
+            self.log(table, self.announcer, group="FINAL", message=f"{key}: {table.player_scores[key]}")
 
     def _get_next_player_from_index(self, index):
         next_player = (index + 1) % len(self.players)
@@ -55,9 +55,10 @@ class Game():
         pass_count = 0
         for player_index in range(0, len(self.players)):
             player = self.players[player_index]
-            player.draw_hand(table, self.players_draw_num)
+            self.draw_hand_for_player(table, player)
             if player.player_has_spinner(table):
                 start_player_index = player_index
+                self.log(table, player, "SPINNER", "I have the spinner!")
 
         # draw to find the spinner if no one drew it when drawing hands
         if start_player_index is None:
@@ -66,41 +67,82 @@ class Game():
         current_player_index = start_player_index
         while not round_is_over:
             current_player = self.players[current_player_index]
-            play_result = current_player.play(table)
-            if play_result == PlayResult.OUT:
-                round_is_over = True
-                # end round
-            elif play_result == PlayResult.PASS:
+            player_train = table.trains[current_player]
+            available_trains = [train for train in table.trains.values() if train.is_public() or train == player_train]
+            play_result = self.play_player_recursive(table, current_player, available_trains, 1)
+            if play_result == PlayResult.NOPLAY:
                 pass_count += 1
+                player_train.set_public(True)
                 round_is_over = pass_count > len(self.players) and len(table.pool) == 0
                 if round_is_over:
-                    table.log(self.announcer, group="PASS", message="No one can play! The round is over and hands will be scored as-is")
-            elif play_result == PlayResult.NEXT:
-                pass_count = 0
-            
+                    self.log(table, self.announcer, group="PASS", message="No one can play! The round is over and hands will be scored as-is")
+            elif play_result == PlayResult.PLAY:
+                if len(current_player.hand) == 0:
+                    self.log(table, current_player, "OUT", "went out!")
+                    round_is_over = True
+
             current_player_index = self._get_next_player_from_index(current_player_index)
         
         #round is over
         for player in self.players:
             score = player.score()
             table.player_scores[player] += score
-            table.log(player, "ROUND SCORE", f"scored {score} this round, bringing their total to: {table.player_scores[player]}")
-            
-        
+            self.log(table, player, "ROUND SCORE", f"scored {score} this round, bringing their total to: {table.player_scores[player]}")
+    
+    def play_domino(self, table, player, train, domino):
+        player.remove_domino_from_hand(domino)
+        train.add_domino(domino)
+        self.log(table, player, "PLACED", f"played {domino} on {train}")
+        if train == table.trains[player] and train.is_public():
+            train.set_public(False)
+            self.log(table, player, "PLACED", f"penny removed!")
 
+    def play_player_recursive(self, table, player, available_trains, draws):
+        player_action = player.play(table, available_trains)
+        if player_action.action == PlayResult.PLAY:
+            self.play_domino(table, player, player_action.train, player_action.domino)
+
+            if player_action.domino.is_double():
+                return self.play_player_recursive(table, player, available_trains, draws=1)
+            else:
+                return PlayResult.PLAY
+        elif player_action.action == PlayResult.NOPLAY:
+            if draws > 0:
+                self.draw_for_player(table, player, 1)
+                return self.play_player_recursive(table, player, available_trains, draws-1)
+            else:
+                return PlayResult.NOPLAY
+            
+    def draw_for_player(self, table, player, count=1):
+        if len(table.pool) == 0:
+            return []
+        drawn = [table.pool.pop(random.randint(0, len(table.pool) - 1)) for x in range(0, count)]
+        player.hand += drawn
+        self.log(table, player, "DRAW", f"drew: {drawn}")
+        return drawn
+    
+    def draw_hand_for_player(self, table, player):
+        player.hand = []
+        self.draw_for_player(table, player, count=self.players_draw_num)
 
     def draw_start(self, table: Table) -> int:
         start_player_index = None
         draw_player_index = self._get_spinner_draw_start_player()
         while start_player_index is None:
             current_player = self.players[draw_player_index]
-            current_player.draw(table)
+            self.draw_for_player(table, current_player)
             if current_player.player_has_spinner(table):
                 start_player_index = draw_player_index
             else:
                 draw_player_index = self._get_next_player_from_index(draw_player_index)
         assert start_player_index is not None
         return start_player_index
+    
+    def log(self, table, player, group, message):
+        filled = f"[{table.round}][{player}][{group}]: {message}"
+        self.history.append(filled)
+        if self.print_log:
+            print(filled)
 
     def _generate_dominoes(self, num_rounds):
         pool = []

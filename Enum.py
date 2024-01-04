@@ -1,3 +1,3 @@
 from enum import Enum
 
-PlayResult = Enum('PlayResult', ['PASS', 'NEXT', 'OUT'])
+PlayResult = Enum('PlayResult', ['PLAY', 'NOPLAY'])
