@@ -71,30 +71,6 @@ class LegalPlayer(Player):
                 domino = hand_table[train.tip][0]
                 return PlayerAction(PlayResult.PLAY, domino, train)
         return PlayerAction(PlayResult.NOPLAY)
-
-        # if self._play_on_first_train(table, available_trains):
-        #     return self._can_play(table)
-        # else:
-        #     self.log(table, "DRAW", f"cannot play, drawing...")
-        #     if self.draw(table) == []: #no dominoes to draw
-        #         self.log(table, "PASS", f"nothing to draw :(")
-        #         return self._cannot_play(table)
-        #     if self._play_on_first_train(table, available_trains):
-        #         return self._can_play(table)
-        #     else:
-        #         self.log(table, "PASS", f"still cannot play")
-        #         return self._cannot_play(table)
-
-    # def _can_play(self, table) -> PlayResult:
-    #     if len(self.hand) == 0:
-    #         self.log(table, "OUT", f"went out!")
-    #         return PlayResult.OUT
-    #     return PlayResult.NEXT
-    
-    # def _cannot_play(self, table) -> PlayResult:
-    #     self.log(table, "PASS", f"cannot play, putting penny up")
-    #     table.trains[self].set_public(True)
-    #     return PlayResult.PASS
     
     
                 

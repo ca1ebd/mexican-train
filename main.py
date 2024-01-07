@@ -10,7 +10,7 @@ if __name__ == "__main__":
     )
 
     tallies = {player: 0 for player in players}
-    num_games = 1
+    num_games = 1000
 
     for i in range(0, num_games):
         game = Game(num_rounds=9, players = players, print_log=True)

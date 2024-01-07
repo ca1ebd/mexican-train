@@ -15,6 +15,7 @@ class Table:
         self.played_spinner = False
         self.history: list[str] = [] # move to game
         self.print_log = print_log # move to game
+        self.uncovered_double_trains = []
 
     def _reset_trains(self, round): # change to create only, no reset
         for player in self.trains.keys():
@@ -25,6 +26,7 @@ class Table:
         self.spinner = Domino(round_num, round_num)
         self.played_spinner = False
         self._reset_trains(round_num)
+        self.uncovered_double_trains = []
 
     def log(self, player, group, message): # move to game
         pass

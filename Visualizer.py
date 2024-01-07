@@ -18,7 +18,7 @@ class Visualizer:
                 dominoes = table.trains[player].dominoes
                 DG.add_edge(dominoes[i], dominoes[i+1])
             # TODO make this better...
-            if player.is_real:
+            if player.is_real and len(table.trains[player].dominoes) > 0:
                 # add connection to spinner
                 DG.add_edge(table.spinner, table.trains[player].dominoes[0])
         return DG

@@ -72,18 +72,32 @@ class Game():
         while not round_is_over:
             current_player = self.players[current_player_index]
             player_train = table.trains[current_player]
-            available_trains = [train for train in table.trains.values() if train.is_public() or train == player_train]
+            # if uncovered trains has trains, pop the first one... or last?
+            if len(table.uncovered_double_trains) > 0: # there is a double which needs to be covered
+                available_trains = [table.uncovered_double_trains[0]]
+            else:
+                available_trains = [train for train in table.trains.values() if train.is_public() or train == player_train]
             play_result = self.play_player_recursive(table, current_player, available_trains, 1)
             if play_result == PlayResult.NOPLAY:
                 pass_count += 1
                 player_train.set_public(True)
-                round_is_over = pass_count > len(self.players) and len(table.pool) == 0
+                if pass_count > len(self.players):
+                    if len(table.uncovered_double_trains) > 0:
+                        table.uncovered_double_trains.pop()
+                        pass_count = 0
+                    else:
+                        round_is_over = pass_count > len(self.players) and len(table.pool) == 0
                 if round_is_over:
                     self.log(table, self.announcer, group="PASS", message="No one can play! The round is over and hands will be scored as-is")
             elif play_result == PlayResult.PLAY:
+                pass_count = 0
                 if len(current_player.hand) == 0:
                     self.log(table, current_player, "OUT", "went out!")
                     round_is_over = True
+
+            if self.visual_turn:
+                vis = Visualizer(table)
+                vis.render()
 
             current_player_index = self._get_next_player_from_index(current_player_index)
         
@@ -96,6 +110,19 @@ class Game():
         if self.visual_round:
             vis = Visualizer(table)
             vis.render()
+
+        self.visual_round = False
+
+    # TODO this sucks, maybe replace with hashtable?
+    def _game_has_domino_with_number(self, table: Table, number: int):
+        for domino in table.pool:
+            if domino.left == number or domino.right == number:
+                return True
+        for player in self.players:
+            for domino in player.hand:
+                if domino.left == number or domino.right == number:
+                    return True
+        return False
     
     def play_domino(self, table, player, train, domino):
         player.remove_domino_from_hand(domino)
@@ -109,8 +136,13 @@ class Game():
         player_action = player.play(table, available_trains)
         if player_action.action == PlayResult.PLAY:
             self.play_domino(table, player, player_action.train, player_action.domino)
-
+            if player_action.train in table.uncovered_double_trains:
+                table.uncovered_double_trains.remove(player_action.train)
             if player_action.domino.is_double():
+                # self.visual_round = True
+                # add the train to uncovered trains if the pool or player hands have dominos to cover
+                if self._game_has_domino_with_number(table, player_action.domino.left):
+                    table.uncovered_double_trains.append(player_action.train)
                 return self.play_player_recursive(table, player, available_trains, draws=1)
             else:
                 return PlayResult.PLAY
@@ -120,6 +152,12 @@ class Game():
                 return self.play_player_recursive(table, player, available_trains, draws-1)
             else:
                 return PlayResult.NOPLAY
+
+    def check_uncovered_doubles(self, table: Table):
+        uncovered_double_trains = []
+        for player in table.trains: 
+            if table.trains[player].dominoes[-1].is_double():
+                uncovered_double_trains.append(table.trains[player])
             
     def draw_for_player(self, table, player, count=1):
         if len(table.pool) == 0:

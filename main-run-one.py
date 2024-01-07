@@ -14,7 +14,13 @@ if __name__ == "__main__":
     num_games = 1
 
     for i in range(0, num_games):
-        game = Game(num_rounds=9, players = players, print_log=True, visual_round=True)
+        game = Game(
+            num_rounds=9, 
+            players = players, 
+            print_log=True, 
+            # visual_round=True, 
+            # visual_turn=True
+        )
         result_table = game.start()
 
         final_scores = result_table.player_scores
