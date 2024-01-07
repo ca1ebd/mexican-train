@@ -1,5 +1,5 @@
 '''
-A program to simulate dominoes game called Train/Mexican Train
+A program to simulate dominoes game called Mexican Train
 Copyright (C) 2024 Caleb Dudley
 
 This program is free software: you can redistribute it and/or modify
