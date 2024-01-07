@@ -14,16 +14,6 @@ class Player:
 
     def __repr__(self) -> str:
         return self.name
-    
-    # def play(self, table) -> PlayResult:
-    #     result = random.randint(0, 30)
-    #     if result == 0 or len(self.hand) == 0:
-    #         self.log(table, "OUT", f"went out!")
-    #         return PlayResult.OUT
-    #     else:
-    #         domino = self.hand.pop(0)
-    #         self.log(table, "PLACED", f"played {domino}")
-    #         return PlayResult.NEXT
 
     def player_has_spinner(self, table):
         hand_table = self.hash_hand(table)
