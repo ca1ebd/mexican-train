@@ -18,20 +18,24 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from Game import Game
 from Player import Player, LegalPlayer
+from TrainPlayer import LargestDominoPlayer, LargestDominoFirstAvailableTrainPlayer
+from Stats import Stats
 
 if __name__ == "__main__":
     players = (
-        LegalPlayer("Caleb"),
-        LegalPlayer("Cailyn"),
-        LegalPlayer("GrandmaDot"),
+        LargestDominoPlayer("Caleb"),
+        LargestDominoPlayer("Cailyn"),
+        LargestDominoPlayer("GrandmaDot"),
         LegalPlayer("Pop")
     )
 
+    stats = Stats(players)
+
     tallies = {player: 0 for player in players}
-    num_games = 10
+    num_games = 1000
 
     for i in range(0, num_games):
-        game = Game(num_rounds=9, players = players, print_log=True)
+        game = Game(num_rounds=9, players = players, print_log=False, stats=stats)
         result_table = game.start()
 
         final_scores = result_table.player_scores
@@ -45,3 +49,4 @@ if __name__ == "__main__":
         tallies[winner] += 1
 
     print(tallies)
+    stats.print_counters()

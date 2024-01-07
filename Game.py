@@ -1,15 +1,18 @@
 import random
 
+from typing import Optional
+
 from Visualizer import Visualizer
 from Player import Player
 from Domino import Domino, OldLady
 from Table import Table
 from Enum import PlayResult
+from Stats import Stats
 
 
 
 class Game():
-    def __init__(self, num_rounds: int, players: list[Player], print_log=False, visual_round=False, visual_turn=False):
+    def __init__(self, num_rounds: int, players: list[Player], print_log=False, visual_round=False, visual_turn=False, stats: Optional[Stats] = None):
         self.num_rounds = num_rounds
         self.players = players
         self.players_draw_num = 10
@@ -19,6 +22,12 @@ class Game():
         self.history = []
         self.visual_round = visual_round
         self.visual_turn = visual_turn
+        if stats is None:
+            self.stats = Stats(self.players)
+            self.print_stats = True
+        else:
+            self.stats = stats
+            self.print_stats = False
 
     def start(self):
         table = Table(self._generate_dominoes(self.num_rounds), self.players, print_log=self.print_log)
@@ -40,6 +49,8 @@ class Game():
         self.log(table, self.announcer, group="FINAL", message="The game is over!")
         for key in table.player_scores.keys():
             self.log(table, self.announcer, group="FINAL", message=f"{key}: {table.player_scores[key]}")
+        if self.print_stats:
+            self.stats.print_counters()
 
     def _get_next_player_from_index(self, index):
         next_player = (index + 1) % len(self.players)
@@ -63,12 +74,14 @@ class Game():
             if player.player_has_spinner(table):
                 start_player_index = player_index
                 self.log(table, player, "SPINNER", "I have the spinner!")
+                self.stats.increment_counter("drew_spinner", player)
 
         # draw to find the spinner if no one drew it when drawing hands
         if start_player_index is None:
             start_player_index = self.draw_start(table)
         
         current_player_index = start_player_index
+        self.stats.increment_counter("started", self.players[start_player_index])
         while not round_is_over:
             current_player = self.players[current_player_index]
             player_train = table.trains[current_player]
@@ -79,6 +92,7 @@ class Game():
                 available_trains = [train for train in table.trains.values() if train.is_public() or train == player_train]
             play_result = self.play_player_recursive(table, current_player, available_trains, 1)
             if play_result == PlayResult.NOPLAY:
+                self.stats.increment_counter("no_play", current_player)
                 pass_count += 1
                 player_train.set_public(True)
                 if pass_count > len(self.players):
@@ -93,6 +107,7 @@ class Game():
                 pass_count = 0
                 if len(current_player.hand) == 0:
                     self.log(table, current_player, "OUT", "went out!")
+                    self.stats.increment_counter("went_out", current_player)
                     round_is_over = True
 
             if self.visual_turn:
@@ -111,8 +126,6 @@ class Game():
             vis = Visualizer(table)
             vis.render()
 
-        self.visual_round = False
-
     # TODO this sucks, maybe replace with hashtable?
     def _game_has_domino_with_number(self, table: Table, number: int):
         for domino in table.pool:
@@ -127,9 +140,11 @@ class Game():
     def play_domino(self, table, player, train, domino):
         player.remove_domino_from_hand(domino)
         train.add_domino(domino)
+        self.stats.increment_counter("played_domino", player)
         self.log(table, player, "PLACED", f"played {domino} on {train}")
         if train == table.trains[player] and train.is_public():
             train.set_public(False)
+            self.stats.increment_counter("removed_penny", player)
             self.log(table, player, "PLACED", f"penny removed!")
 
     def play_player_recursive(self, table, player, available_trains, draws):
@@ -139,6 +154,7 @@ class Game():
             if player_action.train in table.uncovered_double_trains:
                 table.uncovered_double_trains.remove(player_action.train)
             if player_action.domino.is_double():
+                self.stats.increment_counter("played_double", player)
                 # self.visual_round = True
                 # add the train to uncovered trains if the pool or player hands have dominos to cover
                 if self._game_has_domino_with_number(table, player_action.domino.left):
@@ -165,6 +181,7 @@ class Game():
         drawn = [table.pool.pop(random.randint(0, len(table.pool) - 1)) for x in range(0, count)]
         player.hand += drawn
         self.log(table, player, "DRAW", f"drew: {drawn}")
+        self.stats.increment_counter("drew_domino", player)
         return drawn
     
     def draw_hand_for_player(self, table, player):
@@ -179,6 +196,7 @@ class Game():
             self.draw_for_player(table, current_player)
             if current_player.player_has_spinner(table):
                 start_player_index = draw_player_index
+                self.stats.increment_counter("drew_spinner", current_player)
             else:
                 draw_player_index = self._get_next_player_from_index(draw_player_index)
         assert start_player_index is not None
