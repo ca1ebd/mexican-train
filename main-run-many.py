@@ -18,15 +18,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from Game import Game
 from Player import Player, LegalPlayer
-from TrainPlayer import LargestDominoPlayer, LargestDominoFirstAvailableTrainPlayer
+from TrainPlayer import LargestDominoPlayer, LargestDominoFirstAvailableTrainPlayer, TrainBuilderPlayer, BiasedTrainBuilderPlayer
 from Stats import Stats
 
 if __name__ == "__main__":
     players = (
-        LargestDominoPlayer("Caleb"),
+        BiasedTrainBuilderPlayer("Caleb"),
         LargestDominoPlayer("Cailyn"),
         LargestDominoPlayer("GrandmaDot"),
-        LegalPlayer("Pop")
+        LargestDominoPlayer("Pop")
     )
 
     stats = Stats(players)

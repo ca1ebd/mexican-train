@@ -11,6 +11,13 @@ class Domino:
         self.left = self.right
         self.right = swap
 
+    # returns the other number on the domino
+    def other(self, number: int):
+        if self.left == number:
+            return self.right
+        if self.right == number:
+            return self.left
+
     def score(self):
         return self.left + self.right
     
