@@ -18,11 +18,13 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from Game import Game
 from Player import LegalPlayer
+from TrainPlayer import LargestDominoPlayer, TrainBuilderPlayer, BiasedTrainBuilderPlayer
+from Stats import Stats
 
 if __name__ == "__main__":
     players = (
-        LegalPlayer("Caleb", color="cyan"),
-        LegalPlayer("Cailyn", color="pink"),
+        LargestDominoPlayer("Caleb", color="cyan"),
+        BiasedTrainBuilderPlayer("Cailyn", color="pink"),
         LegalPlayer("GrandmaDot", color="red"),
         LegalPlayer("Pop", color="yellow")
     )
