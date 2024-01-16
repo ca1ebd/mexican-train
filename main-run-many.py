@@ -25,19 +25,19 @@ from Stats import Stats
 
 if __name__ == "__main__":
     
-    players = (
-        BiasedTrainBuilderPlayer("Caleb"),
-        LargestDominoPlayer("Cailyn"),
-        LargestDominoPlayer("GrandmaDot"),
-        LargestDominoPlayer("Pop")
-    )
-
     # players = (
     #     BiasedTrainBuilderPlayer("Caleb"),
-    #     BiasedTrainBuilderPlayer("Cailyn"),
-    #     BiasedTrainBuilderPlayer("GrandmaDot"),
-    #     BiasedTrainBuilderPlayer("Pop")
+    #     LargestDominoPlayer("Cailyn"),
+    #     LargestDominoPlayer("GrandmaDot"),
+    #     LargestDominoPlayer("Pop")
     # )
+
+    players = (
+        BiasedTrainBuilderPlayer("Caleb"),
+        BiasedTrainBuilderPlayer("Cailyn"),
+        BiasedTrainBuilderPlayer("GrandmaDot"),
+        BiasedTrainBuilderPlayer("Pop")
+    )
 
     stats = Stats(players)
 
@@ -48,9 +48,8 @@ if __name__ == "__main__":
 
     for i in range(0, num_games):
         game = Game(num_rounds=9, players = players, print_log=False, stats=stats)
-        result_table = game.start()
+        final_scores = game.start()
 
-        final_scores = result_table.player_scores
         min = final_scores[players[0]]
         winner = players[0]
         for player in players:

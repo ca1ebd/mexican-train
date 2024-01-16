@@ -16,20 +16,29 @@ class Player:
         return self.name
 
     def player_has_spinner(self, table):
-        hand_table = self.hash_hand(table)
-        for domino in hand_table[table.round]:
+        hand_table = self.hash_hand()
+        for domino in self.get_dominoes_for_number(table.round):
             if domino == table.spinner:
                 domino_index = self.hand.index(domino)
                 self.hand.pop(domino_index)
                 
                 return True
         return False
+    
+    def get_dominoes_for_number(self, number: int) -> list[Domino]:
+        hand_table = self.hash_hand()
+        if number not in hand_table:
+            return []
+        return hand_table[number]
 
-    def hash_hand(self, table):
-        hand_table = {x: [] for x in range(0, table.domino_double + 1)}
+    def hash_hand(self):
+        # hand_table = {x: [] for x in range(0, table.domino_double + 1)}
+        hand_table = {}
         for domino in self.hand:
-            hand_table[domino.left].append(domino)
-            hand_table[domino.right].append(domino)
+            for side in [domino.left, domino.right]:
+                if side not in hand_table:
+                    hand_table[side] = []
+                hand_table[side].append(domino)
 
         return hand_table
 
@@ -55,9 +64,9 @@ class Player:
 class LegalPlayer(Player):
 
     def play(self, table, available_trains) -> PlayerAction:
-        hand_table = self.hash_hand(table)
+        hand_table = self.hash_hand()
         for train in available_trains:
-            if len(hand_table[train.tip]) > 0:
+            if len(self.get_dominoes_for_number(train.tip)) > 0:
                 domino = hand_table[train.tip][0]
                 return PlayerAction(PlayResult.PLAY, domino, train)
         return PlayerAction(PlayResult.NOPLAY)

@@ -12,10 +12,10 @@ from Stats import Stats
 
 
 class Game():
-    def __init__(self, num_rounds: int, players: list[Player], print_log=False, visual_round=False, visual_turn=False, stats: Optional[Stats] = None):
+    def __init__(self, num_rounds: int, players: list[Player], players_draw_count = 10, print_log=False, visual_round=False, visual_turn=False, stats: Optional[Stats] = None):
         self.num_rounds = num_rounds
         self.players = players
-        self.players_draw_num = 10
+        self.players_draw_num = players_draw_count
         self.spinner_draw_start_player_index = 0
         self.announcer = Player("Town Crier")
         self.print_log = print_log
@@ -30,25 +30,17 @@ class Game():
             self.print_stats = False
 
     def start(self):
-        table = Table(self._generate_dominoes(self.num_rounds), self.players, print_log=self.print_log)
-        self.play_game(table, self.num_rounds)
-        self.game_over(table)
-        return table
+        self.pool = self._generate_dominoes(self.num_rounds)
+        initial_player_scores = {player: 0 for player in self.players}
+        # final_player_scores = self.play_game(self.num_rounds, initial_player_scores)
+        final_player_scores = self.play_rounds(self.num_rounds, initial_player_scores)
+        self.game_over(final_player_scores)
+        return final_player_scores
 
-    def play_game(self, table: Table, round: int):
-        table.pool = self._shuffle_pool(table.original_pool)
-        table.set_round(round)
-        self.play_round(table)
-
-        if(round == 0):
-            return
-        else:
-            self.play_game(table, round - 1)
-
-    def game_over(self, table: Table):
-        self.log(table, self.announcer, group="FINAL", message="The game is over!")
-        for key in table.player_scores.keys():
-            self.log(table, self.announcer, group="FINAL", message=f"{key}: {table.player_scores[key]}")
+    def game_over(self, final_scores: dict):
+        self.log("end", self.announcer, group="FINAL", message="The game is over!")
+        for key in final_scores.keys():
+            self.log("end", self.announcer, group="FINAL", message=f"{key}: {final_scores[key]}")
         if self.print_stats:
             self.stats.print_counters()
 
@@ -64,7 +56,8 @@ class Game():
 
         return player_index
 
-    def play_round(self, table: Table):
+    def play_rounds(self, round: int, scores):
+        table = Table(self._shuffle_pool(self.pool), self.players, round)
         round_is_over = False
         start_player_index = None
         pass_count = 0
@@ -73,7 +66,7 @@ class Game():
             self.draw_hand_for_player(table, player)
             if player.player_has_spinner(table):
                 start_player_index = player_index
-                self.log(table, player, "SPINNER", "I have the spinner!")
+                self.log(table.round, player, "SPINNER", "I have the spinner!")
                 self.stats.increment_counter("drew_spinner", player)
 
         # draw to find the spinner if no one drew it when drawing hands
@@ -102,11 +95,11 @@ class Game():
                     else:
                         round_is_over = pass_count > len(self.players) and len(table.pool) == 0
                 if round_is_over:
-                    self.log(table, self.announcer, group="PASS", message="No one can play! The round is over and hands will be scored as-is")
+                    self.log(table.round, self.announcer, group="PASS", message="No one can play! The round is over and hands will be scored as-is")
             elif play_result == PlayResult.PLAY:
                 pass_count = 0
                 if len(current_player.hand) == 0:
-                    self.log(table, current_player, "OUT", "went out!")
+                    self.log(table.round, current_player, "OUT", "went out!")
                     self.stats.increment_counter("went_out", current_player)
                     round_is_over = True
 
@@ -119,12 +112,17 @@ class Game():
         #round is over
         for player in self.players:
             score = player.score()
-            table.player_scores[player] += score
-            self.log(table, player, "ROUND SCORE", f"scored {score} this round, bringing their total to: {table.player_scores[player]}")
+            scores[player] += score
+            self.log(table.round, player, "ROUND SCORE", f"scored {score} this round, bringing their total to: {scores[player]}")
 
         if self.visual_round:
             vis = Visualizer(table)
             vis.render()
+
+        if round == 0:
+            return scores
+        else:
+            return self.play_rounds(round - 1, scores)
 
     # TODO this sucks, maybe replace with hashtable?
     def _game_has_domino_with_number(self, table: Table, number: int):
@@ -141,11 +139,11 @@ class Game():
         player.remove_domino_from_hand(domino)
         train.add_domino(domino)
         self.stats.increment_counter("played_domino", player)
-        self.log(table, player, "PLACED", f"played {domino} on {train}")
+        self.log(table.round, player, "PLACED", f"played {domino} on {train}")
         if train == table.trains[player] and train.is_public():
             train.set_public(False)
             self.stats.increment_counter("removed_penny", player)
-            self.log(table, player, "PLACED", f"penny removed!")
+            self.log(table.round, player, "PLACED", f"penny removed!")
 
     def play_player_recursive(self, table, player, available_trains, draws):
         player_action = player.play(table, available_trains)
@@ -180,7 +178,7 @@ class Game():
             return []
         drawn = [table.pool.pop(random.randint(0, len(table.pool) - 1)) for x in range(0, count)]
         player.hand += drawn
-        self.log(table, player, "DRAW", f"drew: {drawn}")
+        self.log(table.round, player, "DRAW", f"drew: {drawn}")
         self.stats.increment_counter("drew_domino", player)
         return drawn
     
@@ -202,8 +200,8 @@ class Game():
         assert start_player_index is not None
         return start_player_index
     
-    def log(self, table, player, group, message):
-        filled = f"[{table.round}][{player}][{group}]: {message}"
+    def log(self, round, player, group, message):
+        filled = f"[{round}][{player}][{group}]: {message}"
         self.history.append(filled)
         if self.print_log:
             print(filled)
@@ -218,6 +216,7 @@ class Game():
                     pool.append(Domino(i, j))
         return pool
 
+    # returns a shuffled copy of the pool argument
     def _shuffle_pool(self, pool):
         shuffled_pool = []
         pool = pool.copy()

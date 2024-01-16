@@ -34,14 +34,13 @@ class PotentialPlay:
 class LargestDominoPlayer(Player):
 
     def play(self, table, available_trains) -> PlayerAction:
-        hand_table = self.hash_hand(table)
+        hand_table = self.hash_hand()
         # compile a list of the longest
         potential_plays = []
         for train in available_trains:
             # if there are dominoes player can play on the train, add them to a list
-            if len(hand_table[train.tip]) > 0:
                 # domino = self.max_score(hand_table[train.tip])
-                potential_plays += [PotentialPlay(domino, train) for domino in hand_table[train.tip]]
+            potential_plays += [PotentialPlay(domino, train) for domino in self.get_dominoes_for_number(train.tip)]
         if len(potential_plays) == 0:
             return PlayerAction(PlayResult.NOPLAY)
         max_play = self.max_score(potential_plays)
@@ -146,8 +145,9 @@ class BiasedTrainBuilderPlayer(TrainBuilderPlayer):
         # my_potential_trains = list(set(my_potential_trains))
         have_train = False
         
-        longest_potential_trains = self.get_longest_trains(my_potential_trains)
-        if longest_potential_trains:
+        
+        if my_potential_trains:
+            longest_potential_trains = self.get_longest_trains(my_potential_trains)
             largest_longest_potential_train = self.get_highest_value_train(longest_potential_trains)
             have_train = True
 
