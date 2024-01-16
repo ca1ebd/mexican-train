@@ -16,12 +16,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 '''
 
+import time
+
 from Game import Game
 from Player import Player, LegalPlayer
 from TrainPlayer import LargestDominoPlayer, LargestDominoFirstAvailableTrainPlayer, TrainBuilderPlayer, BiasedTrainBuilderPlayer
 from Stats import Stats
 
 if __name__ == "__main__":
+    
     players = (
         BiasedTrainBuilderPlayer("Caleb"),
         LargestDominoPlayer("Cailyn"),
@@ -29,10 +32,19 @@ if __name__ == "__main__":
         LargestDominoPlayer("Pop")
     )
 
+    # players = (
+    #     BiasedTrainBuilderPlayer("Caleb"),
+    #     BiasedTrainBuilderPlayer("Cailyn"),
+    #     BiasedTrainBuilderPlayer("GrandmaDot"),
+    #     BiasedTrainBuilderPlayer("Pop")
+    # )
+
     stats = Stats(players)
 
     tallies = {player: 0 for player in players}
     num_games = 1000
+
+    start_time = time.time()
 
     for i in range(0, num_games):
         game = Game(num_rounds=9, players = players, print_log=False, stats=stats)
@@ -47,6 +59,12 @@ if __name__ == "__main__":
                 min = final_scores[winner]
 
         tallies[winner] += 1
+    
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    print(f"Elapsed time: {elapsed_time} seconds")
+    print(f"time/game: {elapsed_time/num_games} seconds")
+    
 
     print(tallies)
     stats.print_counters()

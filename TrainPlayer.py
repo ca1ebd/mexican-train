@@ -126,17 +126,25 @@ class TrainBuilderPlayer(Player):
         return child_trains if child_trains else [[domino]]
 
 class BiasedTrainBuilderPlayer(TrainBuilderPlayer):
+
+    def max_score(self, plays: list[PotentialPlay]) -> PotentialPlay:
+        max = plays[0].domino.score()
+        max_play = plays[0]
+        for play in plays:
+            if play.domino.score() > max:
+                max = play.domino.score()
+                max_play = play
+        return max_play
+    
     def play(self, table, available_trains) -> PlayerAction:
         my_train = table.trains[self]
         other_trains = [train for train in available_trains if train != my_train]
         my_potential_trains = self.get_all_potential_trains(my_train.tip, self.hand)
-        have_train = False
-            
 
-        if len(my_potential_trains) == 0:
-            pass
-            # play junk or draw
-            # return PlayerAction(PlayResult.NOPLAY)
+        # somehow, this makes it slower
+        # my_potential_trains = [tuple(train) for train in self.get_all_potential_trains(my_train.tip, self.hand)]
+        # my_potential_trains = list(set(my_potential_trains))
+        have_train = False
         
         longest_potential_trains = self.get_longest_trains(my_potential_trains)
         if longest_potential_trains:
@@ -146,17 +154,15 @@ class BiasedTrainBuilderPlayer(TrainBuilderPlayer):
         playable_junk = []
         if have_train:
             junk = [domino for domino in self.hand if domino not in largest_longest_potential_train]
-            # playable_junk = []
             
             for train in other_trains:
                 for domino in junk:
                     if train.tip == domino.left or train.tip == domino.right:
                         playable_junk.append(PotentialPlay(domino, train))
 
-        # [PotentialPlay(domino, train) for domino in junk if domino.left == train.tip or domino.right == train.tip for train in other_trains]
-
         if playable_junk:
-            return PlayerAction(PlayResult.PLAY, playable_junk[0].domino, playable_junk[0].train)
+            max_junk = self.max_score(playable_junk)
+            return PlayerAction(PlayResult.PLAY, max_junk.domino, max_junk.train)
 
         if my_train in available_trains and have_train:
             return PlayerAction(PlayResult.PLAY, largest_longest_potential_train[0], my_train)
@@ -168,7 +174,5 @@ class BiasedTrainBuilderPlayer(TrainBuilderPlayer):
                 return PlayerAction(PlayResult.PLAY, hand_table[train.tip][0], train)
             
         return PlayerAction(PlayResult.NOPLAY)
-        # trains = self.get_all_potential_trains(available_trains[0].tip, self.hand)
-        # pass
 
 
